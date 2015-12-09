@@ -1,0 +1,784 @@
+swagger: '2.0'
+info:
+  version: 0.0.1
+  title: '(Working title) 6Aika resource reservation api'
+  description: '**DRAFT** Resource reservation API to be shared between 6Aika cities. Based on City of Helsinki Respa-API'
+host: api.hel.fi
+basePath: /respa/v1
+tags:
+  - name: resource
+    description: Look for available resources
+  - name: reservation
+    description: Make or change your reservations
+  - name: unit
+    description: Places where resources are located
+  - name: filter
+    description: Properties you can use in filtering resources
+  - name: search
+    description: Typeahead suggestions for objects
+produces:
+  - application/json
+consumes:
+  - application/json
+  
+securityDefinitions:
+  user_auth:
+    type: oauth2
+    description: This specification proposes the use of Oauth2 framework for authentication. Users can directly use the API (through thin UI) to create their reservations and administrators can edit all data. This security definition stands for this use case. Another use case would be a one-off identification
+      through a service provider, such that the identities become linked. (FIXME, clearer explantion)
+    authorizationUrl: http://city.test/api/authentication/v1
+    flow: implicit
+    scopes:
+      reservations:userview: view user's own reservations
+      reservations:usermodify: modify user's own reservations, including creation and removal
+      reservations:fullview: view all users' reservations
+      reservations:fullmodify: modify all reservation data
+      user:trustedappmodify: allow adding an application to trusted list
+  trusted_app_auth:
+    type: oauth2
+    description: Company participants in workshop expressed a strong need to authenticate only themselves through the API. This needs a contractual relationship between the service provider and city. Ie. the city needs to trust the service provider to verify the identity of actual person reserving the resources. This security definition stands for this use case.
+    tokenUrl: http://city.test/api/tokenauth/v1
+    flow: application
+    scopes:
+      reservations:appview: view reservations for all users that have agreed to let this application view their data
+      reservations:appmodify: modify reservations for all users that have agreed to let this application to modify their data (incl creation and removal)
+      reservations:proxyreserve: make reservations acting as a proxy for users of the 3rd party service.
+
+paths:
+  /search:
+    get:
+      tags:
+        - search
+      description:
+        Get typeahead suggestions for objects based on an arbitrary user input (the `input` query parameter).
+      parameters:
+        - name: input
+          in: query
+          description: Query search parameter
+          required: true
+          type: string
+        - name: full
+          in: query
+          description: Return all properties with the objects
+          required: false
+          type: boolean
+        - name: types
+          in: query
+          description: Return only objects of the specified types
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              resource:
+                type: array
+                items:
+                  $ref: '#/definitions/resource'
+              unit:
+                type: array
+                items:
+                  $ref: '#/definitions/unit'
+
+  /unit:
+    get:
+      tags:
+        - unit
+      description: 
+        Units are grouping containers for reservable resources. For a simple case the unit would be a building with reservable rooms. It is suggested
+        that unit identifiers use applicable standards. In Finland buildings could be identified using VTJ-PRT. Naturally buildings cover only a subset
+        of potential units.
+
+
+        Returns 20 units per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more than 20 units per page.
+      parameters:
+        - name: page
+          in: query
+          description: Result page number
+          required: false
+          type: integer
+        - name: page_size
+          in: query
+          description: Number of units per page
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              count:
+                type: integer
+                description: 'The total number of results'
+              next:
+                type: string
+                description: 'URL for the next page'
+              prev:
+                type: string
+                description: 'URL for the previous page'
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/unit'
+  /unit/{id}:
+    get:
+      tags:
+        - unit
+      description: 
+        Units are grouping containers for reservable resources. A simple example is a building with reservable rooms.
+        
+        
+        Returns a single unit as identified by id
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: 6Aika resource URI for the unit being queried
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/unit'
+  /purpose:
+    get:
+      tags:
+        - filter
+      description: |
+        Purposes describe what the reservable resource can be used for. This could be 'meeting' or 'playing ball games'
+
+
+        Returns FILLME purposes per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more than FILLME purposes per page.
+      parameters:
+        - name: page
+          in: query
+          description: Result page number
+          required: false
+          type: integer
+        - name: page_size
+          in: query
+          description: Number of purposes per page
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              count:
+                type: integer
+                description: 'The total number of results'
+              next:
+                type: string
+                description: 'URL for the next page'
+              prev:
+                type: string
+                description: 'URL for the previous page'
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/purpose'
+  /purpose/{id}:
+    get:
+      tags:
+        - filter
+      description:
+        Purposes describe what the reservable resource can be used for. For example, this could be 'meeting' or 'playing ball games'
+      
+
+        Eeturns a single purpose identified by id
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: Unique identifier of the usage purpose.
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/purpose'
+  /type:
+    get:
+      tags:
+        - filter
+      description: |
+        Types describe that reservable resource. For example: meeting room or guided tour.
+
+        Returns FILLME types per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more than FILLME units per page.
+      parameters:
+        - name: page
+          in: query
+          description: Result page number
+          required: false
+          type: integer
+        - name: page_size
+          in: query
+          description: Number of types per page
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              count:
+                type: integer
+                description: 'The total number of results'
+              next:
+                type: string
+                description: 'URL for the next page'
+              prev:
+                type: string
+                description: 'URL for the previous page'
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/type'
+  /type/{id}:
+    get:
+      tags:
+        - filter
+      description: |
+        Types describe that reservable resource. For example: meeting room or guided tour.
+
+
+        Returns a single type identified by id
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: Unique identifier of the resource type.
+          required: true
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/type'
+  /resource:
+    get:
+      tags:
+        - resource
+      description: |
+        The resource endpoint returns resources (meeting rooms, workstations, reservable spaces etc.) listed in the reservation system.
+        
+        The endpoint allows queries based on resource purpose, type, name and availability. Availability can be specified for a desired duration in a desired time interval. This allows fetching only the resources that match a particular need at a particular time.
+        
+        Returns 20 resources per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more than 20 units per page.
+      parameters:
+        - name: purpose
+          in: query
+          description: Only return resources that have the specified purpose(s)
+          required: false
+          type: string
+        - name: type
+          in: query
+          description: Only return resources of the specified type
+          required: false
+          type: string
+        - name: search
+          in: query
+          description: Only return resources matching the specified string
+          required: false
+          type: string
+        - name: start
+          in: query
+          description: Use together with `end`. Only return resources that are free within the specified interval.
+          required: false
+          type: string
+          format: date-time
+        - name: end
+          in: query
+          description: Use together with `start`. Only return resources that are free within the specified interval.
+          required: false
+          type: string
+          format: date-time
+        - name: duration
+          in: query
+          description: Use together with `start` and `end`. Only return resources that are free for a consecutive period of `duration` minutes within the specified interval.
+          required: false
+          type: number
+        - name: people
+          in: query
+          description: Only return resources with greater or equal capacity
+          required: false
+          type: number
+        - name: page
+          in: query
+          description: Result page number
+          required: false
+          type: integer
+        - name: page_size
+          in: query
+          description: Number of resources per page
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              count:
+                type: integer
+                description: 'The total number of results'
+              next:
+                type: string
+                description: 'URL for the next page'
+              prev:
+                type: string
+                description: 'URL for the previous page'
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/resource'
+  /resource/{id}:
+    get:
+      tags:
+        - resource
+      description: 
+        The resource endpoint returns resources (meeting rooms, workstations, reservable spaces etc.) listed in the reservation system.
+
+        Returns a single resource identified by id, with returned free times further limited by query parameters.
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: Unique identifier for the resource in the reservation system.
+          required: true
+        - name: start
+          in: query
+          description: Use together with `end`. Specifies starting time for reporting opening hours, availability and reservations.
+          required: false
+          type: string
+          format: date-time
+        - name: end
+          in: query
+          description: Use together with `start`. Specifies ending time for reporting opening hours, availability and reservations.
+          type: string
+          format: date-time
+        - name: duration
+          in: query
+          description: Use together with `start` and `end`. Specifies minimum free period duration for resource availability.
+          required: false
+          type: number
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/resource'
+  /reservation:
+    get:
+      tags:
+        - reservation
+      description: |
+        The reservation endpoint returns reservations listed in the reservation system.
+        
+        Returns 20 reservations per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more than 20 units per page.
+      parameters:
+        - name: page
+          in: query
+          description: Result page number
+          required: false
+          type: integer
+        - name: page_size
+          in: query
+          description: Number of reservations per page
+          required: false
+          type: integer
+      security:
+        - user_auth:
+          - reservations:userview
+          - reservations:fullview
+        - trusted_app_auth:
+          - reservations:appview
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              count:
+                type: integer
+                description: 'The total number of results'
+              next:
+                type: string
+                description: 'URL for the next page'
+              prev:
+                type: string
+                description: 'URL for the previous page'
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/reservation'
+      
+    post:
+      tags:
+        - reservation
+      description:
+        The reservation endpoint accepts reservations.
+      parameters:
+        - name: reservation
+          in: body
+          description: The reservation you wish to make
+          schema:
+            $ref: '#/definitions/reservation'
+          required: true
+      security:
+        - user_auth:
+          - reservations:usermodify
+          - reservations:fullmodify
+        - trusted_app_auth:
+          - reservations:appmodify
+          - reservations:proxyreserve
+      responses:
+        '201':
+          description: Reservation created
+          schema:
+            $ref: '#/definitions/reservation'
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              non_field_errors:
+                type: string
+                description: 'The reason the reservation was not accepted'
+
+  /reservation/{id}:
+    get:
+      tags:
+        - reservation
+      description: 
+        The reservation endpoint returns reservations listed in the reservation system.
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: Unique identifier of the reservation in the reservation system.
+          required: true
+      security:
+        - user_auth:
+          - reservations:userview
+          - reservations:fullview
+        - trusted_app_auth:
+          - reservations:appview
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/reservation'
+    put:
+      tags:
+        - reservation
+      description:
+        The reservation endpoint allows editing existing reservations.
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: Unique identifier of the reservation in the reservation system.
+          required: true
+        - name: reservation
+          in: body
+          description: The reservation data you wish to edit
+          schema:
+            $ref: '#/definitions/reservation'
+          required: true
+      security:
+        - user_auth:
+          - reservations:usermodify
+          - reservations:fullmodify
+        - trusted_app_auth:
+          - reservations:appmodify
+          - reservations:proxyreserve
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            $ref: '#/definitions/reservation'
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              non_field_errors:
+                type: string
+                description: 'The reason the change was not accepted'
+    delete:
+      tags:
+        - reservation
+      description:
+        The reservation endpoint allows deleting existing reservations.
+      parameters:
+        - name: id
+          in: path
+          type: string
+          description: Unique identifier of the reservation in the reservation system.
+          required: true
+      security:
+        - user_auth:
+          - reservations:usermodify
+          - reservations:fullmodify
+        - trusted_app_auth:
+          - reservations:appmodify
+      responses:
+        '204':
+          description: Reservation deleted
+          
+  /user/trusted_applications:
+    patch:
+      tags:
+        - user_settings
+      description: Change user's trusted application list
+      responses:
+        200:  
+          description: Trusted application list updated
+        400:
+          description: Something went wrong
+      security:
+        - user_auth:
+          - user:trustedappmodify
+
+definitions:
+  unit:
+    type: object
+    properties:
+      id:
+        type: string
+        description: 'Unique identifier for the City of Helsinki unit in the City of Helsinki service registry.'
+      opening_hours_today:
+        type: object
+        description: ''
+      created_at:
+        type: string
+        description: ''
+      modified_at:
+        type: string
+        description: ''
+      name:
+        type: object
+        properties: 
+          sv: 
+            type: string
+            description: 'Swedish name for the unit'
+          fi: 
+            type: string
+            description: 'Finnish name for the unit'
+          en: 
+            type: string
+            description: 'English name for the unit'
+      description:
+        type: string
+        description: ''
+      time_zone:
+        type: string
+        description: 'tz database name of the time zone used at the unit'
+      street_address:
+        type: object
+        properties:
+          sv: 
+            type: string
+            description: 'Swedish address for the unit'
+          fi: 
+            type: string
+            description: 'Finnish address for the unit'
+          en: 
+            type: string
+            description: 'English address for the unit'
+      address_zip:
+        type: string
+        description: 'Zip code for the street address'
+      phone: 
+        type: string
+        description: 'Phone number'
+      email:
+        type: string
+        description: 'Contact email address'
+      www_url:
+        type: object
+        properties:
+          sv: 
+            type: string
+            description: 'Swedish WWW URL for the unit'
+          fi: 
+            type: string
+            description: 'Finnish WWW URL for the unit'
+          en: 
+            type: string
+            description: 'English WWW URL for the unit'
+      address_postal_full:
+        type: string
+        description: ''
+      picture_url:
+        type: string
+        description: 'URL of unit picture'
+      picture_caption:
+        type: string
+        description: ''
+      created_by:
+        type: string
+        description: ''
+      modified_by:
+        type: string
+        description: ''
+      location:
+        $ref: '#/definitions/location'
+
+  location:
+    type: object
+    properties:
+      type:
+        type: string
+        description: 'GeoJSON object geometry type'
+      coordinates:
+        type: array
+        description: 'GeoJSON object coordinates'
+        items:
+          type: number
+
+  purpose:
+    type: object
+    properties:
+      id:
+        type: string
+        description: 'Unique identifier of the usage purpose'
+      parent:
+        type: string
+        description: 'The parent purpose of this purpose, or null, if this purpose is main purpose type'
+      name:
+        type: object
+        properties: 
+          fi: 
+            type: string
+            description: 'The purpose in Finnish'
+          en:
+            type: string
+            description: 'The purpose in Finnish'
+
+  type:
+    type: object
+    properties:
+      id:
+        type: string
+        description: 'Unique identifier of the resource type'
+      main_type:
+        type: string
+        description: 'The main category of this resource type'
+      name:
+        type: object
+        properties: 
+          fi: 
+            type: string
+            description: 'Resource type in Finnish'
+
+  reservation:
+    type: object
+    properties:
+      url:
+        type: string
+        description: 'URL of the reservation'
+      resource:
+        type: string
+        description: 'Unique identifier of the reserved resource'
+      user:
+        type: string
+        description: 'Unique identifier of the user who made the reservation'
+      begin:
+        type: string
+        description: 'The starting time of the reservation in ISO 8601 format'
+      end:
+        type: string
+        description: 'The ending time of the reservation in ISO 8601 format'
+      state:
+        type: string
+        description: '**6aika draft** State of the reservation. Can be be one of: approved, pending, needinteraction, rejected, cancelled.'
+      state_interaction:
+        type: string
+        description: '**6aika draft** Short human readable description what needs to be done if the state is needinteraction'
+      
+  resource:
+    type: object
+    properties:
+      id:
+        type: string
+        description: 'Unique identifier of the resource in the reservation system'
+      purposes:
+        type: array
+        description: 'Usage purposes for this resource'
+        items:
+          $ref: '#/definitions/purpose'
+      type:
+        $ref: '#/definitions/type'
+      available_hours:
+        type: array
+        description: 'The intervals when the resource is not reserved during the queried period'
+        items:
+          type: object
+      opening_hours:
+        type: array
+        description: 'The intervals when the resource is open during the queried period'
+        items:
+          type: object
+      reservations:
+        type: array
+        description: 'The reservations made for the resource during the queried period'
+        items:
+          $ref: '#/definitions/reservation'
+      created_at:
+        type: string
+      modified_at:
+        type: string
+      name:
+        type: object
+        properties: 
+          fi: 
+            type: string
+            description: 'Resource name in Finnish'
+          en:
+            type: string
+            description: 'Resource name in English'
+      description:
+        type: object
+        properties: 
+          fi: 
+            type: string
+            description: 'Resource description in Finnish'
+      photo:
+        type: string
+        description: 'URL of resource picture'
+      need_manual_confirmation:
+        type: boolean
+        description: 'Does making a reservation require confirmation from the unit personnel?'
+      authentication:
+        type: string
+        description: 'The type of authentication required to reserve the resource'
+      people_capacity:
+        type: number
+        description: 'The maximum number of people for the resource'
+      area:
+        type: number
+        description: 'The floor area, in sq. m.'
+      ground_plan:
+        type: string
+        description: 'URL of the floor plan'
+      min_period:
+        type: string
+        description: 'The minimum duration of a reservation for the resource, in hh:mm:ss'
+      max_period:
+        type: string
+        description: 'The maximum duration of a reservation for the resource, in hh:mm:ss'
+      created_by:
+        type: string
+      modified_by:
+        type: string
+      unit:
+        type: string
+        description: 'Unique identifier for the City of Helsinki unit where the resource is located'
+      location:
+        $ref: '#/definitions/location'
