@@ -26,8 +26,7 @@ consumes:
 securityDefinitions:
   user_auth:
     type: oauth2
-    description: This specification proposes the use of Oauth2 framework for authentication. Users can directly use the API (through thin UI) to create their reservations and administrators can edit all data. This security definition stands for this use case. Another use case would be a one-off identification
-      through a service provider, such that the identities become linked. (FIXME, clearer explantion)
+    description: This specification proposes the use of Oauth2 framework for authentication. Users can directly use the API (through thin UI) to create their reservations and administrators can edit all data. This security definition stands for this use case. Another use case would be a one-off identification through a service provider, such that the identities become linked. (FIXME, clearer explanation)
     authorizationUrl: http://city.test/api/authentication/v1
     flow: implicit
     scopes:
@@ -89,9 +88,8 @@ paths:
       tags:
         - unit
       description: 
-        Units are grouping containers for reservable resources. For a simple case the unit would be a building with reservable rooms. It is suggested
-        that unit identifiers use applicable standards. In Finland buildings could be identified using VTJ-PRT. Naturally buildings cover only a subset
-        of potential units.
+        Units are grouping containers for reservable resources. For a simple case the unit would be a building with reservable rooms. We suggest
+        that unit identifiers use applicable standards. For example, in Finland buildings could be identified using VTJ-PRT.
 
 
         Returns 20 units per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more than 20 units per page.
