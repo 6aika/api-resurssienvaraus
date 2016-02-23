@@ -12,8 +12,6 @@ tags:
     description: Make or change your reservations
   - name: unit
     description: Places where resources are located
-  - name: equipment
-    description: Equipment available for use in the resources
   - name: filter
     description: Properties you can use in filtering resources
   - name: search
@@ -22,7 +20,7 @@ produces:
   - application/json
 consumes:
   - application/json
-  
+
 securityDefinitions:
   user_auth:
     type: oauth2
@@ -88,8 +86,7 @@ paths:
       tags:
         - unit
       description: 
-        Units are grouping containers for reservable resources. For a simple case the unit would be a building with reservable rooms. We suggest
-        that unit identifiers use applicable standards. For example, in Finland buildings could be identified using VTJ-PRT.
+        Units are grouping containers for reservable resources. For a simple case the unit would be a building with reservable rooms. We suggest that unit identifiers use applicable standards. For example, in Finland buildings could be identified using VTJ-PRT.
 
 
         Returns 20 units per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more than 20 units per page.
@@ -261,117 +258,6 @@ paths:
           schema:
             $ref: '#/definitions/type'
 
-  /equipment:
-    get:
-      tags:
-        - equipment
-      description:
-        The equipment endpoint returns the pieces of equipment of the resources.
-
-        Returns 20 pieces of equipment per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more than 20 pieces of equipment per page.
-      parameters:
-        - name: page
-          in: query
-          description: Result page number
-          required: false
-          type: integer
-        - name: page_size
-          in: query
-          description: Number of pieces of equipment per page
-          required: false
-          type: integer
-      responses:
-        '200':
-          description: Successful response
-          schema:
-            type: object
-            properties:
-              count:
-                type: integer
-                description: 'The total number of results'
-              next:
-                type: string
-                description: 'URL for the next page'
-              prev:
-                type: string
-                description: 'URL for the previous page'
-              results:
-                type: array
-                items:
-                  $ref: '#/definitions/equipment'
-  /equipment/{id}:
-    get:
-      tags:
-        - equipment
-      description:
-        The equipment endpoint returns the pieces of equipment of the resources.
-      parameters:
-        - name: id
-          in: path
-          type: string
-          description: Unique identifier for the piece of equipment.
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          schema:
-            $ref: '#/definitions/equipment'
-  /equipmentcategory:
-    get:
-      tags:
-        - equipment
-      description:
-        The equipment category endpoint returns the possible categories for the pieces of equipment.
-
-        Returns 20 equipment categories per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more than 20 equipment categories per page.
-      parameters:
-        - name: page
-          in: query
-          description: Result page number
-          required: false
-          type: integer
-        - name: page_size
-          in: query
-          description: Number of equipment categories per page
-          required: false
-          type: integer
-      responses:
-        '200':
-          description: Successful response
-          schema:
-            type: object
-            properties:
-              count:
-                type: integer
-                description: 'The total number of results'
-              next:
-                type: string
-                description: 'URL for the next page'
-              prev:
-                type: string
-                description: 'URL for the previous page'
-              results:
-                type: array
-                items:
-                  $ref: '#/definitions/equipmentcategory'
-  /equipmentcategory/{id}:
-    get:
-      tags:
-        - equipment
-      description:
-        The equipment category endpoint returns the possible categories for the pieces of equipment.
-      parameters:
-        - name: id
-          in: path
-          type: string
-          description: Unique identifier for the City of Helsinki equipment category in the City of Helsinki service registry.
-          required: true
-      responses:
-        '200':
-          description: Successful response
-          schema:
-            $ref: '#/definitions/equipmentcategory'
-
   /resource:
     get:
       tags:
@@ -415,6 +301,11 @@ paths:
           description: Use together with `start` and `end`. Only return resources that are free for a consecutive period of `duration` minutes within the specified interval.
           required: false
           type: number
+        - name: during_closing
+          in: query
+          description: Use together with `start` and `end`. Include resources that are free but closed within the specified interval.
+          required: false
+          type: boolean
         - name: people
           in: query
           description: Only return resources with greater or equal capacity
@@ -503,6 +394,17 @@ paths:
           description: Number of reservations per page
           required: false
           type: integer
+        - name: resource
+          in: query
+          description: Resource id, for filtering reservations by resource
+          required: false
+          type: string
+        - name: all
+          in: query
+          description: Display also past reservations. Default to false.
+          required: false
+          type: boolean
+
       security:
         - user_auth:
           - reservations:userview
@@ -659,11 +561,12 @@ paths:
 
 definitions:
   unit:
+    title: Units are containers for reservable resources. Typically buildings.
     type: object
     properties:
       id:
         type: string
-        description: 'Unique identifier for the City of Helsinki unit in the City of Helsinki service registry.'
+        description: 'Unique identifier for the unit. We suggest these are formed from URIs combining the registry used and a registry specific identifier for the unit itself. For "toimipaikkarekisteri" in Helsinki, this could be "tprek://{identifier}"'
       opening_hours_today:
         type: object
         description: ''
@@ -675,6 +578,7 @@ definitions:
         description: ''
       name:
         type: object
+        description: Name of the unit, translated to all languages supported by the interface.
         properties: 
           sv: 
             type: string
@@ -687,7 +591,7 @@ definitions:
             description: 'English name for the unit'
       description:
         type: string
-        description: ''
+        description: Description of the unit, maybe typical activities perhaps there?
       time_zone:
         type: string
         description: 'tz database name of the time zone used at the unit'
@@ -714,6 +618,7 @@ definitions:
         description: 'Contact email address'
       www_url:
         type: object
+        describe: URL for a website with more information about the unit.
         properties:
           sv: 
             type: string
@@ -743,6 +648,7 @@ definitions:
         $ref: '#/definitions/location'
 
   location:
+    title: Location specifier for unit, using GeoJSON
     type: object
     properties:
       type:
@@ -755,6 +661,7 @@ definitions:
           type: number
 
   purpose:
+    title: Suggested usage purpose for resource, provider specific
     type: object
     properties:
       id:
@@ -774,6 +681,7 @@ definitions:
             description: 'The purpose in Finnish'
 
   type:
+    title: Type classification for resource, provider specific
     type: object
     properties:
       id:
@@ -790,6 +698,7 @@ definitions:
             description: 'Resource type in Finnish'
 
   reservation:
+    title: Reservation record, one user, one resource
     type: object
     properties:
       url:
@@ -815,6 +724,8 @@ definitions:
         description: '**6aika draft** Short human readable description what needs to be done if the state is needinteraction'
       
   resource:
+    title: Reservable resource
+    description: Reservable resources 
     type: object
     properties:
       id:
@@ -832,6 +743,7 @@ definitions:
         description: 'The intervals when the resource is not reserved during the queried period'
         items:
           type: object
+
       opening_hours:
         type: array
         description: 'The intervals when the resource is open during the queried period'
@@ -894,120 +806,3 @@ definitions:
         description: 'Unique identifier for the City of Helsinki unit where the resource is located'
       location:
         $ref: '#/definitions/location'
-      equipment:
-        type: object
-        description: 'The resource specific equipment instances'
-        properties:
-          id:
-            type: string
-            description: 'Unique identifier of the piece of equipment'
-          name:
-            type: object
-            properties:
-              fi:
-                type: string
-                description: 'Finnish name for the piece of equipment'
-              en:
-                type: string
-                description: 'English name for the piece of equipment'
-              sv:
-                type: string
-                description: 'Swedish name for the piece of equipment'
-          description:
-            type: string
-            description: 'Description of the resource specific equipment instance'
-          data:
-            type: object
-            additionalProperties:
-              type: string
-            description: 'Additional data related to the resource specific equipment instance'
-
-  equipment:
-    type: object
-    properties:
-      id:
-        type: string
-        description: 'Unique identifier of the piece of equipment'
-      category:
-        type: object
-        description: 'The equipment category the piece of equipment belongs to'
-        properties:
-          id:
-            type: string
-            description: 'Unique identifier of the equipment category'
-          name:
-            type: object
-            properties:
-              fi:
-                type: string
-                description: 'Finnish name for the equipment category'
-              en:
-                type: string
-                description: 'English name for the equipment category'
-              sv:
-                type: string
-                description: 'Swedish name for the equipment category'
-      name:
-        type: object
-        properties:
-          fi:
-            type: string
-            description: 'Finnish name for the piece of equipment'
-          en:
-            type: string
-            description: 'English name for the piece of equipment'
-          sv:
-            type: string
-            description: 'Swedish name for the piece of equipment'
-      aliases:
-        type: array
-        description: 'Aliases for the piece of equipment'
-        items:
-          type: object
-          properties:
-            name:
-              type: string
-              description: 'The name of the equipment alias'
-            language:
-              type: string
-              description: 'The language of the equipment alias. "fi", "sv" or "en".'
-
-  equipmentcategory:
-    type: object
-    properties:
-      id:
-        type: string
-        description: 'Unique identifier of the equipment category'
-      name:
-        type: object
-        properties:
-          fi:
-            type: string
-            description: 'Finnish name for the equipment category'
-          en:
-            type: string
-            description: 'English name for the equipment category'
-          sv:
-            type: string
-            description: 'Swedish name for the equipment category'
-      equipment:
-        type: array
-        description: 'The pieces of equipment that belong to the equipment category'
-        items:
-          type: object
-          properties:
-            id:
-              type: string
-              description: 'Unique identifier of the piece of equipment'
-            name:
-              type: object
-              properties:
-               fi:
-                 type: string
-                 description: 'Finnish name for the piece of equipment'
-               en:
-                 type: string
-                 description: 'English name for the piece of equipment'
-               sv:
-                 type: string
-                 description: 'Swedish name for the piece of equipment'
