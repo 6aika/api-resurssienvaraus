@@ -544,7 +544,87 @@ paths:
       responses:
         '204':
           description: Reservation deleted
-          
+
+  /order:
+    get:
+      tags:
+        - reservation
+      description: |
+        The order endpoint returns orders listed in the reservation system.
+
+        Returns FILLME orders per page. The optional parameter **page** allows specifying page number. **page_size** allows specifying more units per page.
+      parameters:
+        - name: page
+          in: query
+          description: Result page number
+          required: false
+          type: integer
+        - name: page_size
+          in: query
+          description: Number of reservations per page
+          required: false
+          type: integer
+        - name: resource
+          in: query
+          description: Resource id, for filtering orders by resource
+          required: false
+          type: string
+        - name: all
+          in: query
+          description: Display also past orders. Default to false.
+          required: false
+          type: boolean
+
+      responses:
+        '200':
+          description: Successful response
+          schema:
+            type: object
+            properties:
+              count:
+                type: integer
+                description: 'The total number of results'
+              next:
+                type: string
+                description: 'URL for the next page'
+              prev:
+                type: string
+                description: 'URL for the previous page'
+              results:
+                type: array
+                items:
+                  $ref: '#/definitions/order'
+
+    post:
+      tags:
+        - reservation
+      description:
+        The order endpoint accepts reservations.
+      parameters:
+        - name: order
+          in: body
+          description: The order you wish to make
+          schema:
+            $ref: '#/definitions/order'
+          required: true
+      security:
+        - user_auth:
+          - reservations:usermodify
+          - reservations:fullmodify
+      responses:
+        '201':
+          description: Order created
+          schema:
+            $ref: '#/definitions/order'
+        '400':
+          description: Bad request
+          schema:
+            type: object
+            properties:
+              non_field_errors:
+                type: string
+                description: 'The reason the order was not accepted'
+
   /user/trusted_applications:
     patch:
       tags:
@@ -618,7 +698,7 @@ definitions:
         description: 'Contact email address'
       www_url:
         type: object
-        describe: URL for a website with more information about the unit.
+        description: URL for a website with more information about the unit.
         properties:
           sv: 
             type: string
@@ -806,3 +886,32 @@ definitions:
         description: 'Unique identifier for the City of Helsinki unit where the resource is located'
       location:
         $ref: '#/definitions/location'
+
+  order:
+    title: Order for a resource
+    description: Order is a mechanism for making reservations that are first ordered and then accepted or rejected together. Orders can be used for resources that require verification or for longer or chained reservations.
+    type: object
+    properties:
+      id:
+        type: string
+        description: Unique identifier for this order
+      reservations:
+        type: array
+        description: Array of reservations that are to be reserved together.
+        items:
+          $ref: '#/definitions/reservation'
+      status:
+        description: 'Status of this order. Preliminary values: pending, rejected, accepted, confirmed'
+        type: string
+        readOnly: true
+      additional_info:
+        description: 'Additional info for the order. The contents of this depend on the resources being reserved. The resources owner will define what is needed.'
+        type: string
+      handler:
+        description: Person responsible for this handling this order
+        type: string
+        readOnly: true
+      user:
+        description: User that owns this order
+        type: string
+        readOnly: true
