@@ -1,4 +1,14 @@
 #!/usr/bin/env python
+"""
+Simple script to generate graphviz input file from datatype definitions
+in OpenAPI (nee Swagger) definition. Needs pystache somewhere and of course
+graphviz.
+
+Usage:
+./generate_graph.py > my_fancy_graph.gv (input file & template are hardcoded below)
+dot -Tpdf -O my_fancy_graph.gv (replace pdf with png, if so desired)
+"""
+
 import yaml
 import pystache
 import json
